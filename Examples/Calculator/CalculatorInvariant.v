@@ -48,6 +48,11 @@ move: (Huniq); rewrite cat_uniq=>/andP[_]/andP[/negP H]_.
 by apply: H; apply/hasP; exists z.
 Qed.
 
+(*
+d : dstatelet
+This is Inv 2 from the paper.
+
+*)
 Definition CalcInv d :=
   forall (C: coh d) n to v args i s',
     n \in cls -> to \in cs ->
@@ -59,6 +64,25 @@ Notation coh' := (coh cal).
 Notation Sinv := (@S_inv cal (fun d _ => CalcInv d)).
 Notation Rinv := (@R_inv cal (fun d _ => CalcInv d)).
 Notation PI := pf_irr.
+
+(* Those notation decls above are abbreviations https://coq.inria.fr/refman/user-extensions/syntax-extensions.html#abbreviations
+  @ in function position is just qualification? https://coq.inria.fr/refman/language/core/assumptions.html
+  dstatelet is protocol-specific soup + state.
+  \in is defined on ssreflect seqs https://math-comp.github.io/htmldoc/mathcomp.ssreflect.seq.html
+  cs and cls are disjoint sets of nodes
+  soup is an fcsl.pcm.unionmap, and \\-> is points-to https://coq.kwarc.info/fcsl.pcm.unionmap.html#um_pts
+  keys are nid
+  \+ is the pcm binary op
+  Sinv and Rinv are just S_inv and R_inv specialised to this invariant
+  S_inv is part of the WithInv combinator ProtocolWithInvariant for enriching a protocol with a transition
+
+  server_send_trans takes f, precondition, two sets of nodes
+  s1 is showing that this transition preserves the invariant?
+
+  server_send_trans is defined in the protocol
+  generic protocol send transition specialized to client/server + calculator protocol
+*)
+Check SendTrans.
 
 Program Definition s1: Sinv (server_send_trans f prec cs cls).
 Proof.

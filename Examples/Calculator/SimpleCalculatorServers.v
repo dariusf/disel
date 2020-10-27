@@ -63,6 +63,7 @@ Hypothesis state0_wf : state_wf state0.
 requests left to be processed) and correctly handles the state, passed
 between iterations. *)
 
+(* This is the spec that each server has *)
 Definition server_loop_body_spec (s : Sstate) :=
   DHT [sv, W]
   (fun i => loc i = st :-> ([::]:reqs) /\ state_wf s,                    
@@ -137,6 +138,7 @@ Definition state_wf := fun _ : unit => True.
 Definition state0 := tt.
 Lemma state0_wf : state_wf state0. Proof. done. Qed.
 
+(* Simplest iteration which just answers *)
 Program Definition one_shot_body : forall _ : unit,
   server_loop_body_spec l f prec cs cls sv _ state_wf state0 :=
   fun _ =>

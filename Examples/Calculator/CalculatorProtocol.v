@@ -72,9 +72,11 @@ Definition cstate := seq perm.
 Definition all_valid (s : cstate) := all (fun e => prec e.2) s.
 
 (* Local state coherence *)
+(* the heap contains just the server state and all of the server state is valid (adheres to precondition).
+  the server state contains client id, server id, args and result
+*)
 Definition localCoh (n : nid) : Pred heap :=
   [Pred h | exists (s : cstate), h = st :-> s /\ all_valid s].
-
 
 (* Tags *)
 Definition req : nat := 0.
@@ -97,6 +99,7 @@ Definition cohMsg (ms: msg TaggedMessage) : Prop :=
 Definition soupCoh : Pred soup :=
   [Pred s | valid s /\ forall m ms, find m s = Some ms -> cohMsg ms].
 
+(* coherence of the entire protocol: local, soup, and message coherence *)
 Definition calcoh d : Prop :=
   let: dl := dstate d in
   let: ds := dsoup d in
@@ -188,6 +191,7 @@ Qed.
 
 (****************************************************)
 
+(* this is finally where it's exported *)
 Notation coh := CalCoh.
 
 (*** Server Transitions ***)
@@ -243,15 +247,19 @@ Definition entry_finder (to : nid) msg :=
 Definition can_send (s : cstate) to msg :=
   has (entry_finder to msg) s.
 
+(* we're allowed to send a message in the current state,
+  i.e. we don't send messages we're not supposed to *)
 Definition ss_safe (this to : nid)
            (d : dstatelet) (msg : seq nat) :=
   to \in cls /\ this \in cs /\
   exists (C : coh d),
   has (entry_finder to msg) (getSt this C).
 
+(* the safety property above implies coherence, that server state is valid *)
 Lemma ss_safe_coh this to d m : ss_safe this to d m -> coh d.
 Proof. by case=>_[]_[]. Qed.
 
+(* safety implies that the receipient and sender are valid nodes? just an aux lemma *)
 Lemma ss_safe_in this to d m : ss_safe this to d m ->
                              this \in nodes /\ to \in nodes.
 Proof.
@@ -262,6 +270,7 @@ Lemma ss_safe_this this to d m :
   ss_safe this to d m -> this \in cs.
 Proof. by case=>_[?][]. Qed.
 
+(* update server state *)
 Definition ss_step (this to : nid) (d : dstatelet)
            (msg : seq nat)
            (pf : ss_safe this to d msg) :=
@@ -269,6 +278,7 @@ Definition ss_step (this to : nid) (d : dstatelet)
   let s := getSt this C in
   Some (st :-> remove_elem s (to, this, (behead msg))).
 
+(* taking steps is safe and preserves properties *)
 Lemma ss_step_coh : s_step_coh_t coh resp ss_step.
 Proof.
 move=>this to d msg pf h[]->{h}.
@@ -296,6 +306,7 @@ split=>//; apply: remove_elem_all.
 by case: {-1}(ss_safe_coh pf)=>_ _ _/(_ _ Ni)[]s[]/(getStK (ss_safe_coh pf))->.
 Qed.
 
+(* safety implies we can transition safely *)
 Lemma ss_safe_def this to d msg :
       ss_safe this to d msg <->
       exists b pf, @ss_step this to d msg pf = Some b.
@@ -441,6 +452,7 @@ Definition CalculatorProtocol := CalculatorProtocol.
 
 Definition CalCoh := CalCoh.
 
+(* The transitions in Fig 2 *)
 Definition server_send_trans := server_send_trans.
 Definition server_recv_trans := server_recv_trans.
 Definition client_send_trans := client_send_trans.
